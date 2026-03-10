@@ -9,19 +9,14 @@ app = FastAPI(
 
 API_BASE = "https://free-ff-api-src-5plp.onrender.com/api/v1"
 
-# tất cả region
 REGIONS = [
     "IND","BR","ID","VN","TH","SG","ME","EU","NA","PK","CIS"
 ]
 
 
-# tìm region của UID
 def find_region(uid):
-
     for region in REGIONS:
-
         try:
-
             r = requests.get(
                 f"{API_BASE}/account",
                 params={"uid": uid, "region": region},
@@ -40,9 +35,9 @@ def find_region(uid):
 
 
 @app.get("/")
-def root():
+def home():
     return {
-        "message": "Free Fire Global API running",
+        "status": "API Running",
         "usage": "/api/check?uid="
     }
 
@@ -55,7 +50,9 @@ def check(uid: str):
     region, account = find_region(uid)
 
     if not region:
-        return {"error": "UID not found"}
+        return {
+            "error": "UID not found"
+        }
 
     stats = requests.get(
         f"{API_BASE}/playerstats",
@@ -64,41 +61,49 @@ def check(uid: str):
 
     s = stats.get("result", {})
 
-    result = f"""
-┌ THÔNG TIN CƠ BẢN
-├─ Tên: {account.get("nickname")}
-├─ UID: {uid}
-├─ Cấp độ: {account.get("level")}
-├─ Khu vực: {region}
-├─ Lượt thích: {account.get("likes")}
-├─ Điểm uy tín: {account.get("creditScore")}
-└─ Chữ ký: {account.get("signature")}
+    result = {
+        "basic_info": {
+            "name": account.get("nickname"),
+            "uid": uid,
+            "level": account.get("level"),
+            "region": region,
+            "likes": account.get("likes"),
+            "credit_score": account.get("creditScore"),
+            "signature": account.get("signature")
+        },
 
-┌ HOẠT ĐỘNG TÀI KHOẢN
-├─ Phiên bản gần nhất: {account.get("releaseVersion")}
-├─ Huy hiệu BP hiện tại: {account.get("badgeCnt")}
-├─ Rank BR: {s.get("rank")}
-├─ Rank CS: {s.get("csRank")}
-├─ Ngày tạo: {account.get("createAt")}
-└─ Đăng nhập gần nhất: {account.get("lastLoginAt")}
+        "activity": {
+            "version": account.get("releaseVersion"),
+            "badge": account.get("badgeCnt"),
+            "rank_br": s.get("rank"),
+            "rank_cs": s.get("csRank"),
+            "created_at": account.get("createAt"),
+            "last_login": account.get("lastLoginAt")
+        },
 
-┌ TỔNG QUAN
-├─ Avatar ID: {account.get("avatarId")}
-├─ Banner ID: {account.get("bannerId")}
-├─ Pin ID: {account.get("pinId")}
-└─ Kỹ năng được trang bị: {account.get("skills")}
+        "overview": {
+            "avatar": account.get("avatarId"),
+            "banner": account.get("bannerId"),
+            "pin": account.get("pinId"),
+            "skills": account.get("skills")
+        },
 
-┌ THÚ CƯNG
-├─ Đang dùng?: {account.get("pet", {}).get("isSelected")}
-├─ ID thú cưng: {account.get("pet", {}).get("id")}
-├─ Kinh nghiệm: {account.get("pet", {}).get("exp")}
-└─ Cấp độ: {account.get("pet", {}).get("level")}
-"""
+        "pet": {
+            "selected": account.get("pet", {}).get("isSelected"),
+            "pet_id": account.get("pet", {}).get("id"),
+            "exp": account.get("pet", {}).get("exp"),
+            "level": account.get("pet", {}).get("level")
+        }
+    }
 
-    end = round(time.time() - start, 2)
+    process = round(time.time() - start, 2)
 
     return {
         "uid": uid,
+        "region": region,
+        "data": result,
+        "process_time": f"{process}s"
+    }
         "region": region,
         "result": result,
         "process_time": f"{end}s"
